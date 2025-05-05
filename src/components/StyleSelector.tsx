@@ -3,9 +3,11 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Check, ChevronDown } from 'lucide-react';
+import { StyleType } from '@/pages/Index';
 
 interface StyleOption {
-  name: string;
+  name: StyleType;
+  icon?: React.ReactNode;
 }
 
 const styles: StyleOption[] = [
@@ -15,8 +17,12 @@ const styles: StyleOption[] = [
   { name: "Formal" },
 ];
 
-const StyleSelector: React.FC = () => {
-  const [selectedStyle, setSelectedStyle] = useState<StyleOption>(styles[0]);
+interface StyleSelectorProps {
+  selectedStyle: StyleType;
+  onStyleChange: (style: StyleType) => void;
+}
+
+const StyleSelector: React.FC<StyleSelectorProps> = ({ selectedStyle, onStyleChange }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -38,10 +44,10 @@ const StyleSelector: React.FC = () => {
             <button
               key={style.name}
               className={`w-full flex items-center justify-between px-4 py-3 hover:bg-claude-button-hover text-left ${
-                style === selectedStyle ? "bg-claude-button-hover" : ""
+                style.name === selectedStyle ? "bg-claude-button-hover" : ""
               }`}
               onClick={() => {
-                setSelectedStyle(style);
+                onStyleChange(style.name);
                 setIsOpen(false);
               }}
             >
@@ -51,7 +57,7 @@ const StyleSelector: React.FC = () => {
                 </svg>
                 <span className="text-white">{style.name}</span>
               </div>
-              {style === selectedStyle && (
+              {style.name === selectedStyle && (
                 <Check className="h-5 w-5 text-claude-coral" />
               )}
             </button>

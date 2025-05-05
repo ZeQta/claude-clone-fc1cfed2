@@ -2,13 +2,16 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import ClaudeLogo from './ClaudeLogo';
+import { cn } from '@/lib/utils';
 
 interface SidebarProps {
   onNewChat: () => void;
-  recentChats: string[];
+  chatHistories: { id: string; title: string }[];
+  onSelectChat: (chatId: string) => void;
+  currentChatId: string | null;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onNewChat, recentChats }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onNewChat, chatHistories, onSelectChat, currentChatId }) => {
   return (
     <aside className="h-full bg-claude-sidebar-bg border-r border-claude-button-hover w-full max-w-xs overflow-y-auto flex flex-col">
       <div className="flex items-center justify-between p-4 border-b border-claude-button-hover">
@@ -51,16 +54,20 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat, recentChats }) => {
       <div className="p-3 border-t border-claude-button-hover mt-2">
         <h3 className="text-claude-text-secondary text-xs font-medium px-2 py-1">Recents</h3>
         <div className="mt-2 flex flex-col gap-1">
-          {recentChats.map((chat, index) => (
+          {chatHistories.map((chat) => (
             <Button
-              key={index}
-              className="w-full flex items-center gap-2 py-2 px-3 rounded-md bg-transparent hover:bg-claude-button-hover text-white justify-start"
+              key={chat.id}
+              className={cn(
+                "w-full flex items-center gap-2 py-2 px-3 rounded-md bg-transparent hover:bg-claude-button-hover text-white justify-start",
+                currentChatId === chat.id && "bg-claude-button-hover"
+              )}
               variant="ghost"
+              onClick={() => onSelectChat(chat.id)}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
               </svg>
-              {chat}
+              {chat.title}
             </Button>
           ))}
         </div>

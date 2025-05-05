@@ -3,12 +3,23 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import StyleSelector from './StyleSelector';
 import ModelSelector from './ModelSelector';
+import { ModelType, StyleType } from '@/pages/Index';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
+  selectedModel: ModelType;
+  onModelChange: (model: ModelType) => void;
+  selectedStyle: StyleType;
+  onStyleChange: (style: StyleType) => void;
 }
 
-const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
+const ChatInput: React.FC<ChatInputProps> = ({ 
+  onSendMessage, 
+  selectedModel, 
+  onModelChange,
+  selectedStyle,
+  onStyleChange
+}) => {
   const [message, setMessage] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -17,6 +28,11 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
       onSendMessage(message);
       setMessage('');
     }
+  };
+
+  // Handle file selection for multi-modal inputs
+  const handleFileUpload = () => {
+    alert('File upload functionality would be implemented here in a real application');
   };
 
   return (
@@ -30,7 +46,10 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
           rows={2}
         />
         <div className="absolute bottom-4 right-4 flex gap-2">
-          <StyleSelector />
+          <StyleSelector 
+            selectedStyle={selectedStyle} 
+            onStyleChange={onStyleChange} 
+          />
           <Button 
             type="submit"
             size="icon"
@@ -50,13 +69,17 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
             size="icon"
             variant="ghost" 
             className="h-10 w-10 rounded-lg bg-claude-input-bg hover:bg-claude-button-hover"
+            onClick={handleFileUpload}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 4V20M4 12H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           </Button>
         </div>
-        <ModelSelector />
+        <ModelSelector 
+          selectedModel={selectedModel} 
+          onModelChange={onModelChange} 
+        />
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
         <Button type="button" className="claude-button" variant="ghost">
