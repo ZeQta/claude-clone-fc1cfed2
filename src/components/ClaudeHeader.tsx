@@ -15,10 +15,12 @@ const ClaudeHeader: React.FC<ClaudeHeaderProps> = ({ userName }) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center py-8 space-y-6">
-      <ClaudeLogo />
-      <h1 className="text-4xl font-serif text-white">
-        <span className="claude-sunburst mr-2">★</span>
+    <div className="flex flex-col items-center justify-center py-12 space-y-8">
+      <div className="flex items-center justify-center">
+        <ClaudeLogo />
+      </div>
+      <h1 className="text-4xl md:text-5xl font-serif text-white text-center">
+        <span className="claude-sunburst mr-2 text-lg align-middle">★</span>
         {getGreeting()}, {userName}
       </h1>
     </div>
