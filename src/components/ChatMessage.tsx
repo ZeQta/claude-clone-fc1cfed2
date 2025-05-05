@@ -2,6 +2,7 @@
 import React from 'react';
 import { cn } from "@/lib/utils";
 import ClaudeLogo from './ClaudeLogo';
+import MarkdownRenderer from './MarkdownRenderer';
 
 export interface Message {
   id: string;
@@ -24,12 +25,16 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
     >
       <div className="flex items-start gap-4 w-full max-w-3xl mx-auto">
         {message.sender === 'claude' && (
-          <div className="mt-1">
+          <div className="mt-1 flex-shrink-0">
             <ClaudeLogo />
           </div>
         )}
         <div className="flex-1">
-          <p className="text-white text-base leading-relaxed">{message.content}</p>
+          {message.sender === 'user' ? (
+            <p className="text-white text-base leading-relaxed">{message.content}</p>
+          ) : (
+            <MarkdownRenderer content={message.content} />
+          )}
         </div>
       </div>
     </div>

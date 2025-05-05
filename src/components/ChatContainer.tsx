@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Message } from './ChatMessage';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
@@ -14,6 +14,7 @@ interface ChatContainerProps {
   onModelChange: (model: ModelType) => void;
   selectedStyle: StyleType;
   onStyleChange: (style: StyleType) => void;
+  isMobile: boolean;
 }
 
 const ChatContainer: React.FC<ChatContainerProps> = ({
@@ -23,17 +24,28 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
   selectedModel,
   onModelChange,
   selectedStyle,
-  onStyleChange
+  onStyleChange,
+  isMobile
 }) => {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex-1 overflow-y-auto flex flex-col">
         {messages.length === 0 ? (
           <ClaudeHeader userName={userName} />
         ) : (
-          messages.map((message) => (
-            <ChatMessage key={message.id} message={message} />
-          ))
+          <>
+            {messages.map((message) => (
+              <ChatMessage key={message.id} message={message} />
+            ))}
+            <div ref={messagesEndRef} />
+          </>
         )}
       </div>
       <ChatInput 
@@ -42,6 +54,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
         onModelChange={onModelChange}
         selectedStyle={selectedStyle}
         onStyleChange={onStyleChange}
+        isMobile={isMobile}
       />
     </div>
   );

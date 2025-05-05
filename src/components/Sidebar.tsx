@@ -1,75 +1,190 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import ClaudeLogo from './ClaudeLogo';
 import { cn } from '@/lib/utils';
+import { Check, Edit, Pencil, Plus, Trash2, X } from 'lucide-react';
 
-interface SidebarProps {
-  onNewChat: () => void;
-  chatHistories: { id: string; title: string }[];
-  onSelectChat: (chatId: string) => void;
-  currentChatId: string | null;
+export interface ChatHistoryItem {
+  id: string;
+  title: string;
+  lastMessage: string;
+  timestamp: Date;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onNewChat, chatHistories, onSelectChat, currentChatId }) => {
-  return (
+interface SidebarProps {
+  isMobile: boolean;
+  showSidebar: boolean;
+  onNewChat: () => void;
+  chatHistories: ChatHistoryItem[];
+  onSelectChat: (chatId: string) => void;
+  onDeleteChat: (chatId: string) => void;
+  onEditChatTitle: (chatId: string, newTitle: string) => void;
+  currentChatId: string | null;
+  closeSidebar: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ 
+  isMobile,
+  showSidebar,
+  onNewChat, 
+  chatHistories, 
+  onSelectChat, 
+  onDeleteChat,
+  onEditChatTitle,
+  currentChatId,
+  closeSidebar
+}) => {
+  const [editingChatId, setEditingChatId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+
+  const startEditing = (chatId: string, currentTitle: string) => {
+    setEditingChatId(chatId);
+    setEditTitle(currentTitle);
+  };
+
+  const saveEdit = (chatId: string) => {
+    if (editTitle.trim()) {
+      onEditChatTitle(chatId, editTitle.trim());
+    }
+    setEditingChatId(null);
+  };
+
+  const cancelEdit = () => {
+    setEditingChatId(null);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, chatId: string) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveEdit(chatId);
+    }
+    if (e.key === 'Escape') {
+      cancelEdit();
+    }
+  };
+
+  const handleChatSelect = (chatId: string) => {
+    onSelectChat(chatId);
+    if (isMobile) {
+      closeSidebar();
+    }
+  };
+
+  const SidebarContent = () => (
     <aside className="h-full bg-claude-sidebar-bg border-r border-claude-button-hover w-full max-w-xs overflow-y-auto flex flex-col">
       <div className="flex items-center justify-between p-4 border-b border-claude-button-hover">
         <div className="flex items-center gap-2">
           <ClaudeLogo />
           <h1 className="text-white font-medium">Claude</h1>
         </div>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="h-8 w-8 rounded-md hover:bg-claude-button-hover"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M1 12L23 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M1 5L23 5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M1 19L23 19" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </Button>
+        {isMobile && (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 rounded-md hover:bg-claude-button-hover"
+            onClick={closeSidebar}
+          >
+            <X size={18} />
+          </Button>
+        )}
       </div>
       <div className="p-3 flex flex-col gap-2">
         <Button
-          onClick={onNewChat}
+          onClick={() => {
+            onNewChat();
+            if (isMobile) {
+              closeSidebar();
+            }
+          }}
           className="w-full flex items-center gap-2 py-2 px-3 rounded-md bg-transparent hover:bg-claude-button-hover text-white justify-start"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 4V20M4 12H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
+          <Plus size={16} />
           New chat
-        </Button>
-        <Button
-          className="w-full flex items-center gap-2 py-2 px-3 rounded-md bg-transparent hover:bg-claude-button-hover text-white justify-start"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Projects
         </Button>
       </div>
       
-      <div className="p-3 border-t border-claude-button-hover mt-2">
+      <div className="p-3 border-t border-claude-button-hover mt-2 flex-1 overflow-y-auto">
         <h3 className="text-claude-text-secondary text-xs font-medium px-2 py-1">Recents</h3>
         <div className="mt-2 flex flex-col gap-1">
-          {chatHistories.map((chat) => (
-            <Button
-              key={chat.id}
-              className={cn(
-                "w-full flex items-center gap-2 py-2 px-3 rounded-md bg-transparent hover:bg-claude-button-hover text-white justify-start",
-                currentChatId === chat.id && "bg-claude-button-hover"
-              )}
-              variant="ghost"
-              onClick={() => onSelectChat(chat.id)}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-              </svg>
-              {chat.title}
-            </Button>
-          ))}
+          {chatHistories.length === 0 ? (
+            <p className="text-claude-text-secondary text-sm px-2 py-1">No recent chats</p>
+          ) : (
+            chatHistories.map((chat) => (
+              <div key={chat.id} className="group relative">
+                {editingChatId === chat.id ? (
+                  <div className="flex items-center gap-2 py-2 px-3 rounded-md bg-claude-button-hover">
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(e, chat.id)}
+                      className="flex-1 bg-transparent text-white border-b border-claude-text-secondary focus:outline-none focus:border-claude-coral"
+                      autoFocus
+                    />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6" 
+                      onClick={() => saveEdit(chat.id)}
+                    >
+                      <Check size={14} />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6" 
+                      onClick={cancelEdit}
+                    >
+                      <X size={14} />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    className={cn(
+                      "w-full flex items-center gap-2 py-2 px-3 rounded-md bg-transparent hover:bg-claude-button-hover text-white justify-start",
+                      currentChatId === chat.id && "bg-claude-button-hover"
+                    )}
+                    variant="ghost"
+                    onClick={() => handleChatSelect(chat.id)}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                    </svg>
+                    <span className="truncate">{chat.title}</span>
+                  </Button>
+                )}
+                {!editingChatId && (
+                  <div className="absolute right-2 top-2 hidden group-hover:flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 bg-transparent hover:bg-claude-button-hover rounded-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        startEditing(chat.id, chat.title);
+                      }}
+                    >
+                      <Pencil size={12} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 bg-transparent hover:bg-claude-button-hover rounded-full text-red-500"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteChat(chat.id);
+                      }}
+                    >
+                      <Trash2 size={12} />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </div>
       
@@ -94,6 +209,18 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat, chatHistories, onSelectCha
       </div>
     </aside>
   );
+
+  if (isMobile) {
+    return (
+      <Drawer open={showSidebar} onOpenChange={closeSidebar}>
+        <DrawerContent className="max-h-[95vh] p-0 bg-claude-sidebar-bg">
+          <SidebarContent />
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return showSidebar ? <SidebarContent /> : null;
 };
 
 export default Sidebar;

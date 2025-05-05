@@ -8,14 +8,20 @@ import { ModelType } from '@/pages/Index';
 interface ModelOption {
   name: ModelType;
   description: string;
-  isPro?: boolean;
+  apiName: string;
 }
 
 const models: ModelOption[] = [
-  { name: "Claude 3.7 Sonnet", description: "Our most intelligent model yet", isPro: true },
-  { name: "Claude 3.5 Haiku", description: "Fastest model for daily tasks" },
-  { name: "Claude 3.5 Sonnet (Oct 2024)", description: "Balanced speed and capabilities" },
-  { name: "Claude 3 Opus", description: "Most comprehensive reasoning" },
+  { 
+    name: "Claude 3.7 Sonnet", 
+    description: "Our most intelligent model yet", 
+    apiName: "claude-3-7-sonnet" 
+  },
+  { 
+    name: "Claude 3.5 Sonnet", 
+    description: "Balanced speed and capabilities", 
+    apiName: "claude-3-5-sonnet" 
+  },
 ];
 
 interface ModelSelectorProps {
@@ -56,11 +62,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ selectedModel, onModelCha
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
                   <span className="text-white">{model.name}</span>
-                  {model.isPro && (
-                    <span className="px-1.5 py-0.5 text-xs bg-claude-pro-badge rounded text-white">
-                      PRO
-                    </span>
-                  )}
                 </div>
                 {model.description && (
                   <span className="text-claude-text-secondary text-sm">
@@ -73,11 +74,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ selectedModel, onModelCha
               )}
             </button>
           ))}
-          <div className="border-t border-claude-button-hover mt-2 pt-2 px-4">
-            <button className="text-claude-text-secondary py-2 text-sm hover:text-white">
-              More models
-            </button>
-          </div>
         </div>
       </PopoverContent>
     </Popover>

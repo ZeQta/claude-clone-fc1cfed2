@@ -1,12 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { Message } from '@/components/ChatMessage';
-import Sidebar from '@/components/Sidebar';
+import Sidebar, { ChatHistoryItem } from '@/components/Sidebar';
 import ChatContainer from '@/components/ChatContainer';
 import StatusBar from '@/components/StatusBar';
 import { v4 as uuidv4 } from 'uuid';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { generateAIResponse } from '@/utils/ai';
 
-export type ModelType = "Claude 3.7 Sonnet" | "Claude 3.5 Haiku" | "Claude 3.5 Sonnet (Oct 2024)" | "Claude 3 Opus";
+export type ModelType = "Claude 3.7 Sonnet" | "Claude 3.5 Sonnet";
 export type StyleType = "Normal" | "Concise" | "Explanatory" | "Formal";
 
 export interface ChatHistory {
@@ -20,14 +22,27 @@ export interface ChatHistory {
 const Index: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [showSidebar, setShowSidebar] = useState(true);
-  const [userName, setUserName] = useState('User');
+  const [userName, setUserName] = useState('');
   const [chatHistories, setChatHistories] = useState<ChatHistory[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<ModelType>("Claude 3.7 Sonnet");
   const [selectedStyle, setSelectedStyle] = useState<StyleType>("Normal");
+  const [isGeneratingResponse, setIsGeneratingResponse] = useState(false);
+  const [isFirstVisit, setIsFirstVisit] = useState(true);
   
-  // Initialize or load chat history from localStorage
+  const isMobile = useIsMobile();
+  
+  // Initialize or load user name and chat history from localStorage
   useEffect(() => {
+    const savedUserName = localStorage.getItem('userName');
+    
+    if (savedUserName) {
+      setUserName(savedUserName);
+      setIsFirstVisit(false);
+    } else {
+      setIsFirstVisit(true);
+    }
+    
     const savedHistories = localStorage.getItem('chatHistories');
     if (savedHistories) {
       try {
@@ -55,6 +70,20 @@ const Index: React.FC = () => {
     }
   }, []);
 
+  // If it's the user's first visit, ask for their name
+  useEffect(() => {
+    if (isFirstVisit && !userName) {
+      const askForNameMessage: Message = {
+        id: uuidv4(),
+        content: "Hello! I'm Claude, an AI assistant created by Anthropic. What's your name?",
+        sender: 'claude',
+        timestamp: new Date()
+      };
+      
+      setMessages([askForNameMessage]);
+    }
+  }, [isFirstVisit, userName]);
+
   // Save chat histories to localStorage whenever they change
   useEffect(() => {
     if (chatHistories.length > 0) {
@@ -69,47 +98,49 @@ const Index: React.FC = () => {
       if (currentChat) {
         setMessages(currentChat.messages);
       }
-    } else {
+    } else if (!isFirstVisit) {
       setMessages([]);
     }
-  }, [currentChatId, chatHistories]);
+  }, [currentChatId, chatHistories, isFirstVisit]);
 
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
   };
 
-  const generateAIResponse = (userMessage: string): Promise<string> => {
-    // Simulate AI response based on selected style and model
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        let responsePrefix = "";
-        
-        switch (selectedStyle) {
-          case "Concise":
-            responsePrefix = "Briefly: ";
-            break;
-          case "Explanatory":
-            responsePrefix = "Let me explain: ";
-            break;
-          case "Formal":
-            responsePrefix = "According to current information: ";
-            break;
-          default:
-            responsePrefix = "";
-        }
-        
-        const modelInfo = selectedModel.includes("3.7") ? 
-          "Using advanced reasoning" : 
-          selectedModel.includes("Opus") ? 
-          "Providing comprehensive analysis" : 
-          "With clear thinking";
-        
-        resolve(`${responsePrefix}${modelInfo}, I can help with "${userMessage}". What specific details would you like to know?`);
-      }, 1000);
-    });
+  const handleNameSubmission = (name: string) => {
+    const cleanName = name.replace(/[^a-zA-Z0-9 ]/g, '').trim();
+    const displayName = cleanName || 'User';
+    
+    setUserName(displayName);
+    localStorage.setItem('userName', displayName);
+    setIsFirstVisit(false);
+    
+    // Welcome the user
+    const welcomeMessage: Message = {
+      id: uuidv4(),
+      content: `Nice to meet you, ${displayName}! How can I help you today?`,
+      sender: 'claude',
+      timestamp: new Date()
+    };
+    
+    setMessages([
+      {
+        id: uuidv4(),
+        content: name,
+        sender: 'user',
+        timestamp: new Date()
+      },
+      welcomeMessage
+    ]);
   };
 
   const handleSendMessage = async (content: string) => {
+    // If it's the first message and we don't have a username yet, treat it as name submission
+    if (isFirstVisit && !userName) {
+      handleNameSubmission(content);
+      return;
+    }
+    
     const newMessageId = uuidv4();
     const newMessage: Message = {
       id: newMessageId,
@@ -155,30 +186,104 @@ const Index: React.FC = () => {
     }
     
     // Generate AI response
-    const aiResponse = await generateAIResponse(content);
+    setIsGeneratingResponse(true);
     
-    const claudeResponse: Message = {
-      id: uuidv4(),
-      content: aiResponse,
-      sender: 'claude',
-      timestamp: new Date()
-    };
-    
-    // Update messages with Claude's response
-    const finalMessages = [...updatedMessages, claudeResponse];
-    setMessages(finalMessages);
-    
-    // Update chat history with Claude's response
-    setChatHistories(prev => 
-      prev.map(chat => 
-        chat.id === chatId 
-          ? {
-              ...chat,
-              messages: [...chat.messages, claudeResponse]
+    try {
+      const modelMap: Record<ModelType, string> = {
+        "Claude 3.7 Sonnet": "claude-3-7-sonnet",
+        "Claude 3.5 Sonnet": "claude-3-5-sonnet"
+      };
+      
+      // Create a placeholder response
+      const responseId = uuidv4();
+      const placeholderResponse: Message = {
+        id: responseId,
+        content: "",
+        sender: 'claude',
+        timestamp: new Date()
+      };
+      
+      setMessages([...updatedMessages, placeholderResponse]);
+      
+      // Generate response with the appropriate style prefix
+      let stylePrefix = "";
+      switch (selectedStyle) {
+        case "Concise":
+          stylePrefix = "Respond concisely: ";
+          break;
+        case "Explanatory":
+          stylePrefix = "Explain in detail: ";
+          break;
+        case "Formal":
+          stylePrefix = "Respond formally: ";
+          break;
+      }
+      
+      const fullResponse = await generateAIResponse(
+        stylePrefix + content,
+        modelMap[selectedModel] as 'claude-3-7-sonnet' | 'claude-3-5-sonnet',
+        (partial) => {
+          setMessages(current => {
+            const updatedMessages = [...current];
+            const responseIndex = updatedMessages.findIndex(m => m.id === responseId);
+            if (responseIndex !== -1) {
+              updatedMessages[responseIndex] = {
+                ...updatedMessages[responseIndex],
+                content: updatedMessages[responseIndex].content + partial
+              };
             }
-          : chat
-      )
-    );
+            return updatedMessages;
+          });
+        }
+      );
+      
+      const claudeResponse: Message = {
+        id: responseId,
+        content: fullResponse,
+        sender: 'claude',
+        timestamp: new Date()
+      };
+      
+      // Update messages and chat history with Claude's final response
+      setChatHistories(prev => 
+        prev.map(chat => 
+          chat.id === chatId 
+            ? {
+                ...chat,
+                messages: [...chat.messages, claudeResponse]
+              }
+            : chat
+        )
+      );
+      
+    } catch (error) {
+      console.error("Error generating AI response:", error);
+      
+      // Add error message
+      const errorResponse: Message = {
+        id: uuidv4(),
+        content: "I'm sorry, I encountered an error while generating a response. Please try again.",
+        sender: 'claude',
+        timestamp: new Date()
+      };
+      
+      setMessages([...updatedMessages, errorResponse]);
+      
+      // Update chat history with error message
+      setChatHistories(prev => 
+        prev.map(chat => 
+          chat.id === chatId 
+            ? {
+                ...chat,
+                messages: [...chat.messages, errorResponse]
+              }
+            : chat
+        )
+      );
+      
+    } finally {
+      setIsGeneratingResponse(false);
+    }
   };
 
   const handleNewChat = () => {
@@ -194,6 +299,38 @@ const Index: React.FC = () => {
     }
   };
 
+  const handleDeleteChat = (chatId: string) => {
+    setChatHistories(prev => prev.filter(chat => chat.id !== chatId));
+    
+    if (currentChatId === chatId) {
+      if (chatHistories.length > 1) {
+        // Find the next chat to select
+        const nextChat = chatHistories.find(chat => chat.id !== chatId);
+        if (nextChat) {
+          setCurrentChatId(nextChat.id);
+          setMessages(nextChat.messages);
+        } else {
+          handleNewChat();
+        }
+      } else {
+        handleNewChat();
+      }
+    }
+  };
+
+  const handleEditChatTitle = (chatId: string, newTitle: string) => {
+    setChatHistories(prev => 
+      prev.map(chat => 
+        chat.id === chatId 
+          ? {
+              ...chat,
+              title: newTitle
+            }
+          : chat
+      )
+    );
+  };
+
   const handleModelChange = (model: ModelType) => {
     setSelectedModel(model);
   };
@@ -202,30 +339,43 @@ const Index: React.FC = () => {
     setSelectedStyle(style);
   };
 
+  // Auto-hide sidebar on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setShowSidebar(false);
+    } else {
+      setShowSidebar(true);
+    }
+  }, [isMobile]);
+
   return (
     <div className="min-h-screen flex flex-col bg-claude-dark-bg text-white">
-      <StatusBar toggleSidebar={toggleSidebar} />
+      <StatusBar 
+        toggleSidebar={toggleSidebar} 
+        userName={userName || 'User'} 
+      />
       <div className="flex-1 flex overflow-hidden">
-        {showSidebar && (
-          <Sidebar 
-            onNewChat={handleNewChat}
-            chatHistories={chatHistories.map(chat => ({
-              id: chat.id,
-              title: chat.title
-            }))}
-            onSelectChat={handleSelectChat}
-            currentChatId={currentChatId}
-          />
-        )}
+        <Sidebar 
+          isMobile={isMobile}
+          showSidebar={showSidebar}
+          onNewChat={handleNewChat}
+          chatHistories={chatHistories}
+          onSelectChat={handleSelectChat}
+          onDeleteChat={handleDeleteChat}
+          onEditChatTitle={handleEditChatTitle}
+          currentChatId={currentChatId}
+          closeSidebar={() => setShowSidebar(false)}
+        />
         <main className="flex-1 flex flex-col overflow-hidden">
           <ChatContainer 
             messages={messages}
-            userName={userName}
+            userName={userName || 'User'}
             onSendMessage={handleSendMessage}
             selectedModel={selectedModel}
             onModelChange={handleModelChange}
             selectedStyle={selectedStyle}
             onStyleChange={handleStyleChange}
+            isMobile={isMobile}
           />
         </main>
       </div>
