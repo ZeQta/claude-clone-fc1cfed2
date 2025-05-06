@@ -3,6 +3,7 @@ import React from 'react';
 import { cn } from "@/lib/utils";
 import ClaudeLogo from './ClaudeLogo';
 import MarkdownRenderer from './MarkdownRenderer';
+import UserAvatar from './UserAvatar';
 
 export interface Message {
   id: string;
@@ -13,9 +14,11 @@ export interface Message {
 
 interface ChatMessageProps {
   message: Message;
+  isThinking?: boolean;
+  userName: string;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, isThinking = false, userName }) => {
   return (
     <div 
       className={cn(
@@ -24,9 +27,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       )}
     >
       <div className="flex items-start gap-4 w-full max-w-3xl mx-auto">
-        {message.sender === 'claude' && (
+        {message.sender === 'claude' ? (
           <div className="mt-1 flex-shrink-0">
-            <ClaudeLogo />
+            <ClaudeLogo isThinking={isThinking} />
+          </div>
+        ) : (
+          <div className="mt-1 flex-shrink-0">
+            <UserAvatar userName={userName} />
           </div>
         )}
         <div className="flex-1">

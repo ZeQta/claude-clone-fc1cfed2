@@ -6,7 +6,7 @@ import ChatContainer from '@/components/ChatContainer';
 import StatusBar from '@/components/StatusBar';
 import { v4 as uuidv4 } from 'uuid';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { generateAIResponse } from '@/utils/ai';
+import { generateAIResponse, clearConversationContext } from '@/utils/ai';
 
 export type ModelType = "Claude 3.7 Sonnet" | "Claude 3.5 Sonnet";
 export type StyleType = "Normal" | "Concise" | "Explanatory" | "Formal";
@@ -289,6 +289,7 @@ const Index: React.FC = () => {
   const handleNewChat = () => {
     setMessages([]);
     setCurrentChatId(null);
+    clearConversationContext(); // Clear conversation context for a fresh start
   };
 
   const handleSelectChat = (chatId: string) => {
@@ -296,6 +297,8 @@ const Index: React.FC = () => {
     const selectedChat = chatHistories.find(chat => chat.id === chatId);
     if (selectedChat) {
       setMessages(selectedChat.messages);
+      // Reset conversation context to match the selected chat
+      clearConversationContext();
     }
   };
 
@@ -376,6 +379,7 @@ const Index: React.FC = () => {
             selectedStyle={selectedStyle}
             onStyleChange={handleStyleChange}
             isMobile={isMobile}
+            isGeneratingResponse={isGeneratingResponse}
           />
         </main>
       </div>

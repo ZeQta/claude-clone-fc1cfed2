@@ -1,7 +1,11 @@
 
 import React from 'react';
 
-const ClaudeLogo: React.FC = () => {
+interface ClaudeLogoProps {
+  isThinking?: boolean;
+}
+
+const ClaudeLogo: React.FC<ClaudeLogoProps> = ({ isThinking = false }) => {
   return (
     <svg 
       width="40" 
@@ -9,7 +13,8 @@ const ClaudeLogo: React.FC = () => {
       viewBox="0 0 40 40" 
       fill="none" 
       xmlns="http://www.w3.org/2000/svg"
-      className="claude-sunburst"
+      className={`claude-sunburst ${isThinking ? 'animate-spin' : ''}`}
+      style={{ animationDuration: isThinking ? '3s' : '0s' }}
     >
       <path d="M20 0C20.7105 0 21.2857 0.579 21.2857 1.2895V6.8421C21.2857 7.5526 20.7105 8.1316 20 8.1316C19.2895 8.1316 18.7143 7.5526 18.7143 6.8421V1.2895C18.7143 0.579 19.2895 0 20 0Z" fill="currentColor"/>
       <path d="M20 31.8684C20.7105 31.8684 21.2857 32.4474 21.2857 33.1579V38.7105C21.2857 39.421 20.7105 40 20 40C19.2895 40 18.7143 39.421 18.7143 38.7105V33.1579C18.7143 32.4474 19.2895 31.8684 20 31.8684Z" fill="currentColor"/>

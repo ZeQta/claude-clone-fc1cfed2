@@ -22,6 +22,10 @@ export const loadPuterScript = (): Promise<void> => {
   });
 };
 
+// This is our conversation context to maintain continuity
+let conversationContext: string[] = [];
+const MAX_CONTEXT_MESSAGES = 10;
+
 export const generateAIResponse = async (
   prompt: string,
   model: 'claude-3-7-sonnet' | 'claude-3-5-sonnet',
@@ -30,8 +34,14 @@ export const generateAIResponse = async (
   try {
     await loadPuterScript();
     
+    // Add the current prompt to our conversation context
+    conversationContext.push(`Human: ${prompt}`);
+    
+    // Create a prompt with context from previous messages for continuity
+    const contextualPrompt = conversationContext.slice(-MAX_CONTEXT_MESSAGES).join('\n\n') + '\n\nAssistant:';
+    
     let fullResponse = '';
-    const response = await window.puter.ai.chat(prompt, { 
+    const response = await window.puter.ai.chat(contextualPrompt, { 
       model: model, 
       stream: true 
     });
@@ -45,9 +55,21 @@ export const generateAIResponse = async (
       }
     }
     
+    // Add the AI's response to our conversation context
+    conversationContext.push(`Assistant: ${fullResponse}`);
+    
+    // Trim conversation context if it gets too long
+    if (conversationContext.length > MAX_CONTEXT_MESSAGES * 2) {
+      conversationContext = conversationContext.slice(-MAX_CONTEXT_MESSAGES * 2);
+    }
+    
     return fullResponse;
   } catch (error) {
     console.error('Error generating AI response:', error);
     return "I apologize, but I'm having trouble connecting to my AI services right now. Please try again later.";
   }
+};
+
+export const clearConversationContext = () => {
+  conversationContext = [];
 };

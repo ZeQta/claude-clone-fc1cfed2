@@ -15,6 +15,7 @@ interface ChatContainerProps {
   selectedStyle: StyleType;
   onStyleChange: (style: StyleType) => void;
   isMobile: boolean;
+  isGeneratingResponse: boolean;
 }
 
 const ChatContainer: React.FC<ChatContainerProps> = ({
@@ -25,7 +26,8 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
   onModelChange,
   selectedStyle,
   onStyleChange,
-  isMobile
+  isMobile,
+  isGeneratingResponse
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -42,7 +44,12 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
         ) : (
           <>
             {messages.map((message) => (
-              <ChatMessage key={message.id} message={message} />
+              <ChatMessage 
+                key={message.id} 
+                message={message} 
+                userName={userName}
+                isThinking={isGeneratingResponse && message.sender === 'claude' && message === messages[messages.length - 1]} 
+              />
             ))}
             <div ref={messagesEndRef} />
           </>
