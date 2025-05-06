@@ -4,7 +4,7 @@ import { Message } from './ChatMessage';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import ClaudeHeader from './ClaudeHeader';
-import { ModelType, StyleType } from '@/pages/Index';
+import { ModelType, StyleType } from '@/types/chat';
 
 interface ChatContainerProps {
   messages: Message[];

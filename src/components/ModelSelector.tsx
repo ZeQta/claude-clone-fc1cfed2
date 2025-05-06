@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Check, ChevronDown } from 'lucide-react';
-import { ModelType } from '@/pages/Index';
+import { ModelType } from '@/types/chat';
 
 interface ModelOption {
   name: ModelType;

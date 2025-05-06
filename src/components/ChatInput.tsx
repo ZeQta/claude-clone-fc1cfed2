@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import StyleSelector from './StyleSelector';
 import ModelSelector from './ModelSelector';
-import { ModelType, StyleType } from '@/pages/Index';
+import { ModelType, StyleType } from '@/types/chat';
 import { Send } from 'lucide-react';
 
 interface ChatInputProps {

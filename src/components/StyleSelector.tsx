@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Check, ChevronDown } from 'lucide-react';
-import { StyleType } from '@/pages/Index';
+import { StyleType } from '@/types/chat';
 
 interface StyleOption {
   name: StyleType;
