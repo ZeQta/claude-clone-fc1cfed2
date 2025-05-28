@@ -1,5 +1,7 @@
 
 // AI Integration using puter.js
+import { Message } from '@/components/ChatMessage';
+
 declare global {
   interface Window {
     puter: any;
@@ -22,23 +24,36 @@ export const loadPuterScript = (): Promise<void> => {
   });
 };
 
-// This is our conversation context to maintain continuity
-let conversationContext: string[] = [];
-const MAX_CONTEXT_MESSAGES = 10;
+const MAX_HISTORY_MESSAGES_FOR_CONTEXT = 10;
 
 export const generateAIResponse = async (
-  prompt: string,
-  model: 'claude-3-7-sonnet' | 'claude-3-5-sonnet',
+  currentPrompt: string,
+  historyMessages: Message[],
+  model: 'claude-3-7-sonnet' | 'claude-3-5-sonnet' | 'claude-sonnet-4',
   onPartialResponse?: (text: string) => void
 ): Promise<string> => {
   try {
     await loadPuterScript();
     
-    // Add the current prompt to our conversation context
-    conversationContext.push(`Human: ${prompt}`);
+    // Build context from historyMessages
+    // Take the last MAX_HISTORY_MESSAGES_FOR_CONTEXT messages
+    const recentHistorySlice = historyMessages.slice(-MAX_HISTORY_MESSAGES_FOR_CONTEXT);
+
+    const promptLines: string[] = [];
+
+    for (let i = 0; i < recentHistorySlice.length; i++) {
+      const message = recentHistorySlice[i];
+      const isLastMessageInSlice = i === recentHistorySlice.length - 1;
+
+      if (message.sender === 'user') {
+        // If it's the last message, use currentPrompt (which includes style prefix)
+        promptLines.push(`Human: ${isLastMessageInSlice ? currentPrompt : message.content}`);
+      } else if (message.sender === 'claude') {
+        promptLines.push(`Assistant: ${message.content}`);
+      }
+    }
     
-    // Create a prompt with context from previous messages for continuity
-    const contextualPrompt = conversationContext.slice(-MAX_CONTEXT_MESSAGES).join('\n\n') + '\n\nAssistant:';
+    const contextualPrompt = promptLines.join('\n\n') + '\n\nAssistant:';
     
     let fullResponse = '';
     const response = await window.puter.ai.chat(contextualPrompt, { 
@@ -55,21 +70,9 @@ export const generateAIResponse = async (
       }
     }
     
-    // Add the AI's response to our conversation context
-    conversationContext.push(`Assistant: ${fullResponse}`);
-    
-    // Trim conversation context if it gets too long
-    if (conversationContext.length > MAX_CONTEXT_MESSAGES * 2) {
-      conversationContext = conversationContext.slice(-MAX_CONTEXT_MESSAGES * 2);
-    }
-    
     return fullResponse;
   } catch (error) {
     console.error('Error generating AI response:', error);
     return "I apologize, but I'm having trouble connecting to my AI services right now. Please try again later.";
   }
-};
-
-export const clearConversationContext = () => {
-  conversationContext = [];
 };

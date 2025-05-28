@@ -1,7 +1,7 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { generateAIResponse, clearConversationContext } from '@/utils/ai';
+import { generateAIResponse } from '@/utils/ai';
 import { Message } from '@/components/ChatMessage';
 
 export type ModelType = "Claude 3.7 Sonnet" | "Claude 3.5 Sonnet";
@@ -209,7 +209,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const modelMap: Record<ModelType, string> = {
         "Claude 3.7 Sonnet": "claude-3-7-sonnet",
-        "Claude 3.5 Sonnet": "claude-3-5-sonnet"
+        "Claude 3.5 Sonnet": "claude-3-5-sonnet",
+        "Claude Sonnet 4": "claude-sonnet-4"
       };
       
       // Create a placeholder response
@@ -239,7 +240,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const fullResponse = await generateAIResponse(
         stylePrefix + content,
-        modelMap[selectedModel] as 'claude-3-7-sonnet' | 'claude-3-5-sonnet',
+        updatedMessages, // Pass the full chat history including the latest user message
+        modelMap[selectedModel] as 'claude-3-7-sonnet' | 'claude-3-5-sonnet' | 'claude-sonnet-4',
         (partial) => {
           setMessages(current => {
             const updatedMessages = [...current];
@@ -307,7 +309,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handleNewChat = () => {
     setMessages([]);
     setCurrentChatId(null);
-    clearConversationContext(); // Clear conversation context for a fresh start
+    // clearConversationContext(); // No longer needed, context is passed per call
   };
 
   const handleSelectChat = (chatId: string) => {
@@ -316,7 +318,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (selectedChat) {
       setMessages(selectedChat.messages);
       // Reset conversation context to match the selected chat
-      clearConversationContext();
+      // clearConversationContext(); // No longer needed
     }
   };
 

@@ -12,6 +12,11 @@ interface ModelOption {
 }
 
 const models: ModelOption[] = [
+  {
+    name: "Claude Sonnet 4",
+    description: "The latest Sonnet model",
+    apiName: "claude-sonnet-4"
+  },
   { 
     name: "Claude 3.7 Sonnet", 
     description: "Our most intelligent model yet", 
